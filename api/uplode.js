@@ -6,17 +6,15 @@ export default async function handler(req, res) {
   }
 
   const { html } = req.body;
-  const token = process.env.VERCEL_TOKEN;
-
-  if (!token) {
-    return res.status(500).json({ error: "Token tidak ditemukan di server" });
-  }
   if (!html) {
-    return res.status(400).json({ error: "HTML kosong" });
+    return res.status(400).json({ error: "HTML content is missing" });
   }
+
+  // Nama acak untuk setiap deployment
+  const randomName = `html-uplode-${Math.random().toString(36).substring(2, 8)}`;
 
   const payload = {
-    name: "html-uplode",
+    name: randomName,
     files: [
       {
         file: "index.html",
@@ -24,7 +22,7 @@ export default async function handler(req, res) {
       },
     ],
     projectSettings: {
-      framework: "vite",
+      framework: "vite", // framework valid yang ringan
       devCommand: null,
       installCommand: null,
       buildCommand: null,
@@ -33,33 +31,28 @@ export default async function handler(req, res) {
   };
 
   try {
-    const response = await fetch(
-      "https://api.vercel.com/v13/deployments?skipAutoDetectionConfirmation=1",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      }
-    );
+    const response = await fetch("https://api.vercel.com/v13/deployments", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
     const data = await response.json();
 
-    if (response.status !== 200) {
-      console.error("⚠️ Error dari API Vercel:", data);
-    }
+    // Ambil alias URL dari hasil
+    const alias = data?.alias || (data?.aliases?.[0] ?? null);
 
-    const alias = data?.alias || data?.aliases?.[0];
     if (alias) {
       return res.status(200).json({ url: `https://${alias}` });
     } else {
-      return res.status(500).json({ error: "Gagal mendapatkan URL", data });
+      console.error("⚠️ Error dari API Vercel:", data);
+      return res.status(500).json({ error: "Gagal membuat deployment", data });
     }
-  } catch (err) {
-    console.error("🚨 Upload error:", err);
-    return res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error("Upload error:", error);
+    return res.status(500).json({ error: "Internal server error", details: error.message });
   }
 }
-
