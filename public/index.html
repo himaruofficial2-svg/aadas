@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload HTML ke Vercel</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Upload HTML ke Vercel</h1>
+    <form id="uploadForm">
+      <input type="file" id="htmlFile" accept=".html" required />
+      <button type="submit">Upload</button>
+    </form>
+    <p id="result"></p>
+  </div>
+
+  <script>
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const file = document.getElementById('htmlFile').files[0];
+      const text = await file.text();
+
+      const response = await fetch('/api/uplode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html: text })
+      });
+
+      const result = await response.json();
+      document.getElementById('result').innerHTML = result.url
+        ? `<a href="${result.url}" target="_blank">🌐 File dipublikasikan di sini</a>`
+        : '❌ Gagal upload. Coba lagi.';
+    });
+  </script>
+</body>
+</html>
